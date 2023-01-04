@@ -9,22 +9,58 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+### Importing libraries
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+This project uses the Random Forest method to predict the classes of the dataset.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+library(caret)
+library(randomForest)
 ```
 
-## Including Plots
+### Reading the dataset
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+trainRaw <- read.table("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv", sep=",", head=T, row.names=1 ) 
+testRaw <- read.table("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv", sep=",", head=T, row.names=1 ) 
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+### Cleaning data
+
+Removing all columns that have NA values.
+
+```{r}
+trainRaw <- trainRaw[, colSums(is.na(trainRaw)) == 0] 
+testRaw <- testRaw[, colSums(is.na(testRaw)) == 0] 
+```
+
+Maintaining just the numeric values in both training and test sets. 
+
+```{r}
+classe <- trainRaw$classe
+newTrain <- trainRaw[, sapply(trainRaw, is.numeric)]
+newTrain$classe <- classe
+newTest <- testRaw[, sapply(testRaw, is.numeric)]
+```
+
+### Creating data partition
+
+```{r}
+set.seed(434)
+inTrain <- createDataPartition(newTrain$classe, p=0.70, list=F)
+trainData <- newTrain[inTrain, ]
+testData <- newTrain[-inTrain, ]
+```
+
+### Training and predicting
+
+```{r}
+controlRF <- trainControl(method="cv", 5)
+modelRF <- train(classe ~ ., data=trainData, method="rf", trControl=controlRF, ntree=250)
+predictRF <- predict(modelRF, testData)
+
+result <- predict(modelRF, newTest[, -length(names(newTest))])
+result
+```
+
+
