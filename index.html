@@ -381,11 +381,10 @@ testRaw &lt;- read.table(&quot;https://d396qusza40orc.cloudfront.net/predmachlea
 </div>
 <div id="cleaning-data" class="section level3">
 <h3>Cleaning data</h3>
-<p>Removing all columns that have NA values.</p>
+<p>Removing all columns with missing values.</p>
 <pre class="r"><code>trainRaw &lt;- trainRaw[, colSums(is.na(trainRaw)) == 0] 
 testRaw &lt;- testRaw[, colSums(is.na(testRaw)) == 0] </code></pre>
-<p>Maintaining just the numeric values in both training and test
-sets.</p>
+<p>Maintaining just numeric values in both training and test sets.</p>
 <pre class="r"><code>classe &lt;- trainRaw$classe
 newTrain &lt;- trainRaw[, sapply(trainRaw, is.numeric)]
 newTrain$classe &lt;- classe
@@ -393,6 +392,8 @@ newTest &lt;- testRaw[, sapply(testRaw, is.numeric)]</code></pre>
 </div>
 <div id="creating-data-partition" class="section level3">
 <h3>Creating data partition</h3>
+<p>The training data is split into two parts, 70% train and 30%
+test.</p>
 <pre class="r"><code>set.seed(434)
 inTrain &lt;- createDataPartition(newTrain$classe, p=0.70, list=F)
 trainData &lt;- newTrain[inTrain, ]
@@ -400,11 +401,45 @@ testData &lt;- newTrain[-inTrain, ]</code></pre>
 </div>
 <div id="training-and-predicting" class="section level3">
 <h3>Training and predicting</h3>
+<p>Crossvalidation with 5 folds is used to detect out of sample
+error.</p>
 <pre class="r"><code>controlRF &lt;- trainControl(method=&quot;cv&quot;, 5)
 modelRF &lt;- train(classe ~ ., data=trainData, method=&quot;rf&quot;, trControl=controlRF, ntree=250)
 predictRF &lt;- predict(modelRF, testData)
-
-result &lt;- predict(modelRF, newTest[, -length(names(newTest))])
+confusionMatrix(predictRF, as.factor(testData$classe))</code></pre>
+<pre><code>## Confusion Matrix and Statistics
+## 
+##           Reference
+## Prediction    A    B    C    D    E
+##          A 1674    4    0    0    0
+##          B    0 1135    0    0    0
+##          C    0    0 1026    1    0
+##          D    0    0    0  963    1
+##          E    0    0    0    0 1081
+## 
+## Overall Statistics
+##                                           
+##                Accuracy : 0.999           
+##                  95% CI : (0.9978, 0.9996)
+##     No Information Rate : 0.2845          
+##     P-Value [Acc &gt; NIR] : &lt; 2.2e-16       
+##                                           
+##                   Kappa : 0.9987          
+##                                           
+##  Mcnemar&#39;s Test P-Value : NA              
+## 
+## Statistics by Class:
+## 
+##                      Class: A Class: B Class: C Class: D Class: E
+## Sensitivity            1.0000   0.9965   1.0000   0.9990   0.9991
+## Specificity            0.9991   1.0000   0.9998   0.9998   1.0000
+## Pos Pred Value         0.9976   1.0000   0.9990   0.9990   1.0000
+## Neg Pred Value         1.0000   0.9992   1.0000   0.9998   0.9998
+## Prevalence             0.2845   0.1935   0.1743   0.1638   0.1839
+## Detection Rate         0.2845   0.1929   0.1743   0.1636   0.1837
+## Detection Prevalence   0.2851   0.1929   0.1745   0.1638   0.1837
+## Balanced Accuracy      0.9995   0.9982   0.9999   0.9994   0.9995</code></pre>
+<pre class="r"><code>result &lt;- predict(modelRF, newTest[, -length(names(newTest))])
 result</code></pre>
 <pre><code>##  [1] B A B A A E D B A A B C B A E E A B B B
 ## Levels: A B C D E</code></pre>

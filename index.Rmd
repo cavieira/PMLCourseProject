@@ -27,14 +27,14 @@ testRaw <- read.table("https://d396qusza40orc.cloudfront.net/predmachlearn/pml-t
 
 ### Cleaning data
 
-Removing all columns that have NA values.
+Removing all columns with missing values.
 
 ```{r}
 trainRaw <- trainRaw[, colSums(is.na(trainRaw)) == 0] 
 testRaw <- testRaw[, colSums(is.na(testRaw)) == 0] 
 ```
 
-Maintaining just the numeric values in both training and test sets. 
+Maintaining just numeric values in both training and test sets. 
 
 ```{r}
 classe <- trainRaw$classe
@@ -45,6 +45,8 @@ newTest <- testRaw[, sapply(testRaw, is.numeric)]
 
 ### Creating data partition
 
+The training data is split into two parts, 70% train and 30% test.
+
 ```{r}
 set.seed(434)
 inTrain <- createDataPartition(newTrain$classe, p=0.70, list=F)
@@ -54,10 +56,13 @@ testData <- newTrain[-inTrain, ]
 
 ### Training and predicting
 
+Crossvalidation with 5 folds is used to detect out of sample error. 
+
 ```{r}
 controlRF <- trainControl(method="cv", 5)
 modelRF <- train(classe ~ ., data=trainData, method="rf", trControl=controlRF, ntree=250)
 predictRF <- predict(modelRF, testData)
+confusionMatrix(predictRF, as.factor(testData$classe))
 
 result <- predict(modelRF, newTest[, -length(names(newTest))])
 result
